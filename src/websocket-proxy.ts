@@ -1,6 +1,6 @@
 import type { Server, ServerWebSocket, WebSocketHandler } from 'bun';
-import { combinePaths } from './utils';
 import type { EnvironmentStore } from './environment-store';
+import { buildUpstreamWebSocketUrl, buildWebSocketForwardHeaders, getActiveEnvironmentBase } from './proxy-shared';
 
 interface ProxyWebSocketData {
   upstreamUrl: string;
@@ -8,28 +8,19 @@ interface ProxyWebSocketData {
   upstream?: WebSocket;
 }
 
-const hopByHopWebSocketHeaders = new Set([
-  'connection',
-  'upgrade',
-  'sec-websocket-key',
-  'sec-websocket-version',
-  'sec-websocket-extensions',
-]);
-
 export function handleWebSocketProxy(
   req: Request,
   server: Server,
   store: EnvironmentStore,
 ): Response | null {
-  const selection = store.getActiveSelection();
-  if (!selection.url) {
+  const environmentBase = getActiveEnvironmentBase(store);
+  if (!environmentBase) {
     return new Response('エンバイロメントが未設定です /__/ で設定してください', { status: 503 });
   }
 
   const incomingUrl = new URL(req.url);
-  const environmentBase = new URL(selection.url);
   const upstreamUrl = buildUpstreamWebSocketUrl(environmentBase, incomingUrl);
-  const headers = extractForwardHeaders(req.headers, environmentBase);
+  const headers = buildWebSocketForwardHeaders(req.headers, environmentBase);
 
   const upgraded = server.upgrade(req, {
     data: {
@@ -108,30 +99,3 @@ export const websocketBridgeHandler: WebSocketHandler<ProxyWebSocketData> = {
     }
   },
 };
-
-function buildUpstreamWebSocketUrl(environment: URL, incoming: URL): string {
-  const protocol = environment.protocol === 'https:' ? 'wss:' : 'ws:';
-  const base = new URL(environment.toString());
-  base.protocol = protocol;
-  base.pathname = combinePaths(base.pathname, incoming.pathname);
-  base.search = incoming.search;
-  base.hash = '';
-  return base.toString();
-}
-
-function extractForwardHeaders(headers: Headers, environment: URL): Record<string, string> {
-  const forwarded: Record<string, string> = {
-    host: environment.host,
-  };
-  headers.forEach((value, key) => {
-    const lower = key.toLowerCase();
-    if (hopByHopWebSocketHeaders.has(lower)) {
-      return;
-    }
-    forwarded[lower] = value;
-  });
-  if (!forwarded.origin) {
-    forwarded.origin = `${environment.protocol}//${environment.host}`;
-  }
-  return forwarded;
-}

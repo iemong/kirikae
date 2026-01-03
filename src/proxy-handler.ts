@@ -1,23 +1,16 @@
 import type { Context } from 'hono';
 import type { EnvironmentStore } from './environment-store';
-import { combinePaths } from './utils';
+import { buildHttpForwardHeaders, buildUpstreamHttpUrl, getActiveEnvironmentBase } from './proxy-shared';
 
 export async function proxyRequest(c: Context, store: EnvironmentStore): Promise<Response> {
-  const selection = store.getActiveSelection();
-  if (!selection.url) {
+  const environmentBase = getActiveEnvironmentBase(store);
+  if (!environmentBase) {
     return c.text('エンバイロメントが未設定です /__/ にアクセスして設定してください', 503);
   }
 
   const incomingUrl = new URL(c.req.url);
-  const environmentBase = new URL(selection.url);
-  const upstreamUrl = buildUpstreamUrl(environmentBase, incomingUrl);
-
-  const headers = cloneHeaders(c.req.raw.headers);
-  headers.set('host', environmentBase.host);
-  headers.set('x-forwarded-host', incomingUrl.host);
-  headers.set('x-forwarded-proto', incomingUrl.protocol.replace(':', ''));
-  const forwardedFor = c.req.header('x-forwarded-for');
-  headers.set('x-forwarded-for', forwardedFor ?? '127.0.0.1');
+  const upstreamUrl = buildUpstreamHttpUrl(environmentBase, incomingUrl);
+  const headers = buildHttpForwardHeaders(c.req.raw.headers, incomingUrl, environmentBase);
 
   const method = c.req.method.toUpperCase();
   const requestInit: RequestInit = {
@@ -41,14 +34,6 @@ export async function proxyRequest(c: Context, store: EnvironmentStore): Promise
     console.error('[proxy] upstream fetch failed', error);
     return c.text('アップストリームへの接続に失敗しました', 502);
   }
-}
-
-function buildUpstreamUrl(environment: URL, incoming: URL): string {
-  const url = new URL(environment.toString());
-  url.pathname = combinePaths(url.pathname, incoming.pathname);
-  url.search = incoming.search;
-  url.hash = incoming.hash;
-  return url.toString();
 }
 
 function shouldHaveBody(method: string): boolean {
@@ -109,12 +94,4 @@ function stripBasePath(pathname: string, basePath: string): string {
     return stripped.startsWith('/') ? stripped : `/${stripped}`;
   }
   return pathname;
-}
-
-function cloneHeaders(source: Headers): Headers {
-  const headers = new Headers();
-  source.forEach((value, key) => {
-    headers.set(key, value);
-  });
-  return headers;
 }

@@ -1,7 +1,7 @@
 import { resolve, join } from 'node:path';
 
 const DEFAULT_PROXY_PORT = 3200;
-const DEFAULT_ADMIN_PORT = 3201;
+const DEFAULT_ADMIN_PORT = 4000;
 const DEFAULT_DATA_DIR = '.proxy-data';
 const DATA_FILE_NAME = 'targets.json';
 

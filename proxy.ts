@@ -3,6 +3,7 @@ import { buildAdminRouter } from './src/admin';
 import { getAdminPort, getDataFilePath, getProxyPort } from './src/config';
 import { proxyRequest } from './src/proxy-handler';
 import { TargetStore } from './src/store';
+import { handleWebSocketProxy, websocketBridgeHandler } from './src/websocket-proxy';
 
 const dataFilePath = getDataFilePath();
 const store = new TargetStore(dataFilePath);
@@ -18,7 +19,18 @@ if (import.meta.main) {
 
   Bun.serve({
     port,
-    fetch: proxyApp.fetch,
+    fetch: (req, server) => {
+      const upgradeHeader = req.headers.get('upgrade')?.toLowerCase();
+      if (upgradeHeader === 'websocket') {
+        const response = handleWebSocketProxy(req, server, store);
+        if (response) {
+          return response;
+        }
+        return undefined as unknown as Response;
+      }
+      return proxyApp.fetch(req);
+    },
+    websocket: websocketBridgeHandler,
     error(error) {
       console.error('[proxy] unexpected error', error);
       return new Response('Internal Server Error', { status: 500 });

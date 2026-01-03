@@ -1,4 +1,4 @@
-# Local Dev Proxy Switcher 仕様書（最終版 v1.0）
+# KIRIKAE 仕様書（最終版 v1.0）
 
 ## 1. 目的
 
@@ -21,14 +21,14 @@ Browser
   v
 [ Hono Proxy Server ]
   |
-  |  (active target)
+  |  (active environment)
   v
 [ Dev Server (worktree) ]
   http://localhost:4xxx
 ```
 
 - ブラウザは常に `http://localhost:{PROXY_PORT}` にアクセス
-- プロキシが現在アクティブな dev server に全リクエストを転送
+- プロキシが現在アクティブな dev server（エンバイロメント）に全リクエストを転送
 - 転送先は管理画面から **手動で切り替える**
 
 ---
@@ -84,7 +84,7 @@ worktree B → 4002
 
 ### 5.1 Reverse Proxy
 
-- `http://localhost:{PROXY_PORT}/*` へのリクエストを 現在設定されている target URL に転送する
+- `http://localhost:{PROXY_PORT}/*` へのリクエストを 現在設定されている environment URL に転送する
 
 対応内容:
 
@@ -105,18 +105,14 @@ GET /__/
 
 #### 表示内容
 
-- 現在のアクティブ target URL（選択中のものが明確に見えること）
-- target URL を入力するフォーム
-  - 例: `http://localhost:4002`
-- Switch ボタン
-- 登録済みターゲット一覧（ラベル付き）
-  - 各行に「切替」ボタン
-  - 各行に「編集（ラベル/URL）」と「削除」
+- 現在のアクティブな environment URL（選択中のものが明確に見えること）
+- Add Environment フォーム（Name / URL 必須）
+- Saved Environments 一覧（ラベル付き）
+  - 各行に Activate / Save / Delete / Open
 
 #### 挙動
 
-- フォーム送信で target を即時切り替える
-- 一覧の「切替」でも target を切り替える
+- 一覧の Activate でエンバイロメントを切り替える
 - 切替後は管理画面にリダイレクト
 - dev server の起動・停止は行わない
 - 切替直後に HMR が不安定な場合は利用者がリロードで対応
@@ -139,7 +135,7 @@ GET /__/status
 }
 ```
 
-#### target 切り替え
+#### environment 切り替え（API パラメータ名は `target` のまま）
 
 ```
 POST /__/switch
@@ -159,14 +155,14 @@ Body 例:
 
 ---
 
-### 5.4 ターゲット保存（ラベル付き・永続化）
+### 5.4 エンバイロメント保存（ラベル付き・永続化）
 
 本機能は「最近使った履歴」ではなく、**利用者が手で管理する登録リスト**を提供する。
 
 #### データモデル
 
 - `id`: string（ユニーク。生成は UUID 相当でよい）
-- `label`: string（表示名。例: `main`, `feature/login`）
+- `label`: string（表示名。Name として扱う）
 - `url`: string（例: `http://localhost:4002`）
 - `createdAt`: ISO8601
 - `updatedAt`: ISO8601
@@ -216,7 +212,7 @@ Body 例:
 - worktree フォルダとの自動紐付け
 - port 生存チェック（疎通確認や自動掃除）
 - 起動・停止管理
-- 複数 target の同時表示
+- 複数エンバイロメントの同時表示
 - 認証・アクセス制御
 - 「最近使った履歴」の自動記録（※代わりに手動登録リストを提供）
 
@@ -244,7 +240,7 @@ npm run dev -- --port 4002
 ## 8. 運用上の注意
 
 - 本ツールは **開発用途限定**
-- 指定した target が停止している場合、プロキシはエラーを返す
+- 指定したエンバイロメントが停止している場合、プロキシはエラーを返す
 - HMR 不整合はページリロードで解消する前提
 - プロキシポートは個人・業務事情に合わせて自由に変更してよい
 
@@ -252,7 +248,7 @@ npm run dev -- --port 4002
 
 ## 9. 今後の拡張候補（参考）
 
-- target の疎通チェック（生存確認）
+- エンバイロメントの疎通チェック（生存確認）
 - worktree 自己申告ファイル連携（`.devserver.json` 等）
 - worktree 名 / branch 名の表示
 - ワンクリック切替用の URL パラメータ対応（管理画面を開かず切替）
@@ -266,4 +262,3 @@ npm run dev -- --port 4002
 - 一時的な快適さより **長期の理解しやすさ**
 
 このツールは「賢く振る舞わない」ことを価値とする。
-

@@ -1,6 +1,6 @@
 # Local Dev Proxy Switcher
 
-`git worktree` で並行稼働させた複数の dev server を、1 つの固定 URL 経由で手動スイッチするためのローカル開発用リバースプロキシです。ブラウザの URL や Cookie を保ったまま対象サーバーだけを切り替えられます。
+`git worktree` で並行稼働させた複数の dev server を、1 つの固定 URL 経由で手動スイッチするためのローカル開発用リバースプロキシです。ブラウザの URL や Cookie を保ったまま対象サーバーだけを切り替えられます。プロキシ本体と管理 UI/API は別ポートで待ち受けるため、フロントエンドのルーティングと干渉しません。
 
 ## 必要要件
 
@@ -15,11 +15,11 @@ bun install
 ## 起動方法
 
 ```bash
-# 例: プロキシを 3333 番ポートで起動
-PROXY_PORT=3333 bun run proxy.ts
+# 例: プロキシを 3333 番ポート、管理UIを 3334 番で起動
+PROXY_PORT=3333 PROXY_ADMIN_PORT=3334 bun run proxy.ts
 ```
 
-- 管理画面: `http://localhost:{PROXY_PORT}/__/`
+- 管理画面: `http://localhost:{PROXY_ADMIN_PORT}/`
 - プロキシ経由でアプリ確認: `http://localhost:{PROXY_PORT}`
 
 ### 環境変数
@@ -27,6 +27,7 @@ PROXY_PORT=3333 bun run proxy.ts
 | 変数 | 既定値 | 説明 |
 | --- | --- | --- |
 | `PROXY_PORT` | `3200` | プロキシが待ち受けるポート番号 |
+| `PROXY_ADMIN_PORT` | `3201` | 管理UI / 管理API が待ち受けるポート番号 |
 | `PROXY_DATA_DIR` | `./.proxy-data` | ターゲット一覧を保存するディレクトリ |
 
 ## 主な機能
@@ -40,14 +41,14 @@ PROXY_PORT=3333 bun run proxy.ts
 
 | メソッド | パス | 説明 |
 | --- | --- | --- |
-| `GET` | `/__/status` | 現在アクティブな target URL を返却 |
-| `POST` | `/__/switch` | `target` または `targetId` を指定して切り替え |
-| `GET` | `/__/targets` | 登録済みターゲットの一覧 |
-| `POST` | `/__/targets` | ターゲットを追加（`label`, `url`） |
-| `PUT` | `/__/targets/:id` | 既存ターゲットを更新 |
-| `DELETE` | `/__/targets/:id` | ターゲットを削除 |
+| `GET` | `/status` | 現在アクティブな target URL |
+| `POST` | `/switch` | `target` または `targetId` を指定して切り替え |
+| `GET` | `/targets` | 登録済みターゲットの一覧 |
+| `POST` | `/targets` | ターゲットを追加（`label`, `url`） |
+| `PUT` | `/targets/:id` | 既存ターゲットを更新 |
+| `DELETE` | `/targets/:id` | ターゲットを削除 |
 
-`POST /__/switch` などは `application/json` / `application/x-www-form-urlencoded` の両方に対応しています。管理画面からは追加のヘルパーとして `POST /__/targets/:id/update` / `POST /__/targets/:id/delete` を使用しています。
+`POST /switch` などは `application/json` / `application/x-www-form-urlencoded` の両方に対応しています。管理画面からは追加のヘルパーとして `POST /targets/:id/update` / `POST /targets/:id/delete` を使用しています。
 
 ## データファイル
 

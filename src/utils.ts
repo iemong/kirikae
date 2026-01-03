@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 
-export const ADMIN_BASE_PATH = '/__';
+export const ADMIN_BASE_PATH = '';
 
 export function prefersHtml(c: Context): boolean {
   const accept = c.req.header('accept') ?? '';
@@ -80,5 +80,7 @@ export function redirectToAdmin(c: Context, params: Record<string, string> = {})
     }
   });
   const suffix = search.size > 0 ? `?${search.toString()}` : '';
-  return c.redirect(`${ADMIN_BASE_PATH}/${suffix}`);
+  const base = ADMIN_BASE_PATH || '';
+  const target = base ? `${base}/${suffix}` : `/${suffix}`;
+  return c.redirect(target);
 }

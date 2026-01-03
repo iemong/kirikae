@@ -35,6 +35,26 @@ function createEmptyData(): PersistedData {
   };
 }
 
+function normalizeEnvironmentUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) {
+    throw new Error('URL is required.');
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error('Invalid URL.');
+  }
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('Only http and https are supported.');
+  }
+  if (parsed.pathname === '/' && !parsed.search && !parsed.hash) {
+    return parsed.origin;
+  }
+  return parsed.toString();
+}
+
 export class EnvironmentStore {
   private data: PersistedData = createEmptyData();
   private initPromise: Promise<void> | null = null;
@@ -76,17 +96,19 @@ export class EnvironmentStore {
   }
 
   async setActiveEnvironmentUrl(url: string): Promise<void> {
+    const normalized = normalizeEnvironmentUrl(url);
     this.data.activeEnvironmentId = null;
-    this.data.activeEnvironmentUrl = url;
+    this.data.activeEnvironmentUrl = normalized;
     await this.persist();
   }
 
   async addEnvironment(input: { label: string; url: string }): Promise<EnvironmentRecord> {
     const now = new Date().toISOString();
+    const normalizedUrl = normalizeEnvironmentUrl(input.url);
     const record: EnvironmentRecord = {
       id: crypto.randomUUID(),
       label: input.label,
-      url: input.url,
+      url: normalizedUrl,
       createdAt: now,
       updatedAt: now,
     };
@@ -100,8 +122,9 @@ export class EnvironmentStore {
     if (!environment) {
       throw new Error('The specified environment does not exist.');
     }
+    const normalizedUrl = normalizeEnvironmentUrl(update.url);
     environment.label = update.label;
-    environment.url = update.url;
+    environment.url = normalizedUrl;
     environment.updatedAt = new Date().toISOString();
     if (this.data.activeEnvironmentId === id) {
       this.data.activeEnvironmentUrl = environment.url;

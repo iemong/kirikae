@@ -42,9 +42,8 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
         const environment = await store.setActiveEnvironmentById(id);
         console.log(`[proxy] active environment switched to ${environment.url} (${environment.label})`);
       } else if (url) {
-        const sanitized = normalizeEnvironmentUrl(url);
-        await store.setActiveEnvironmentUrl(sanitized);
-        console.log(`[proxy] active environment switched to ${sanitized}`);
+        await store.setActiveEnvironmentUrl(url);
+        console.log(`[proxy] active environment switched to ${url}`);
       } else {
         return respondError(c, preferHtml, 'Please provide an environment URL or environment ID.');
       }
@@ -71,7 +70,7 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
     }
 
     try {
-      const record = await store.addEnvironment({ label, url: normalizeEnvironmentUrl(url) });
+      const record = await store.addEnvironment({ label, url });
       return respondSuccess(c, preferHtml, { target: record }, 'Environment added.');
     } catch (error) {
       return respondError(c, preferHtml, error instanceof Error ? error.message : 'Failed to add environment.');
@@ -90,7 +89,7 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
     }
 
     try {
-      const record = await store.updateEnvironment(id, { label, url: normalizeEnvironmentUrl(url) });
+      const record = await store.updateEnvironment(id, { label, url });
       return respondSuccess(c, preferHtml, { target: record }, 'Environment updated.');
     } catch (error) {
       return respondError(c, preferHtml, error instanceof Error ? error.message : 'Failed to update environment.');
@@ -117,7 +116,7 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
       return redirectToAdmin(c, { error: 'Name and URL are required.' });
     }
     try {
-      await store.updateEnvironment(id, { label, url: normalizeEnvironmentUrl(url) });
+      await store.updateEnvironment(id, { label, url });
       return redirectToAdmin(c, { notice: 'Environment updated.' });
     } catch (error) {
       return redirectToAdmin(c, { error: error instanceof Error ? error.message : 'Failed to update.' });
@@ -150,26 +149,6 @@ function respondError(c: Context, preferHtml: boolean, message: string, status =
     return redirectToAdmin(c, { error: message });
   }
   return c.json({ error: message });
-}
-
-function normalizeEnvironmentUrl(url: string): string {
-  const trimmed = url.trim();
-  if (!trimmed) {
-    throw new Error('URL is required.');
-  }
-  let parsed: URL;
-  try {
-    parsed = new URL(trimmed);
-  } catch {
-    throw new Error('Invalid URL.');
-  }
-  if (!['http:', 'https:'].includes(parsed.protocol)) {
-    throw new Error('Only http and https are supported.');
-  }
-  if (parsed.pathname === '/' && !parsed.search && !parsed.hash) {
-    return parsed.origin;
-  }
-  return parsed.toString();
 }
 
 interface PageState {

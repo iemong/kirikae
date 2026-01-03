@@ -2,11 +2,11 @@ import { Hono } from 'hono';
 import { buildAdminRouter } from './src/admin';
 import { getAdminPort, getDataFilePath, getProxyPort } from './src/config';
 import { proxyRequest } from './src/proxy-handler';
-import { TargetStore } from './src/store';
+import { EnvironmentStore } from './src/environment-store';
 import { handleWebSocketProxy, websocketBridgeHandler } from './src/websocket-proxy';
 
 const dataFilePath = getDataFilePath();
-const store = new TargetStore(dataFilePath);
+const store = new EnvironmentStore(dataFilePath);
 await store.init();
 
 const proxyApp = new Hono();

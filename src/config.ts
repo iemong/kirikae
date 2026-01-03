@@ -1,9 +1,11 @@
 import { resolve, join } from 'node:path';
+import { existsSync } from 'node:fs';
 
 const DEFAULT_PROXY_PORT = 3200;
 const DEFAULT_ADMIN_PORT = 4000;
 const DEFAULT_DATA_DIR = '.proxy-data';
-const DATA_FILE_NAME = 'targets.json';
+const DATA_FILE_NAME = 'environments.json';
+const LEGACY_DATA_FILE_NAME = 'targets.json';
 
 export function getProxyPort(): number {
   const raw = Bun.env.PROXY_PORT;
@@ -28,5 +30,11 @@ export function getDataDir(): string {
 }
 
 export function getDataFilePath(): string {
-  return join(getDataDir(), DATA_FILE_NAME);
+  const dataDir = getDataDir();
+  const primary = join(dataDir, DATA_FILE_NAME);
+  const legacy = join(dataDir, LEGACY_DATA_FILE_NAME);
+  if (existsSync(legacy) && !existsSync(primary)) {
+    return legacy;
+  }
+  return primary;
 }

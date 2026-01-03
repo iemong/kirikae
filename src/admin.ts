@@ -1,23 +1,23 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import type { TargetRecord, TargetStore } from './store';
+import type { EnvironmentRecord, EnvironmentStore } from './environment-store';
 import { ADMIN_BASE_PATH, escapeHtml, prefersHtml, readBody, redirectToAdmin, valueToString } from './utils';
 
 interface AdminOptions {
   dataFilePath: string;
 }
 
-export function buildAdminRouter(store: TargetStore, options: AdminOptions): Hono {
+export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions): Hono {
   const admin = new Hono();
 
   admin.get('/', (c) => {
     const selection = store.getActiveSelection();
-    const targets = store.getTargets();
+    const environments = store.getEnvironments();
     const error = c.req.query('error');
     const notice = c.req.query('notice');
     const html = renderAdminPage({
       selection,
-      targets,
+      environments,
       dataFilePath: options.dataFilePath,
       notice: notice ?? null,
       error: error ?? null,
@@ -38,12 +38,12 @@ export function buildAdminRouter(store: TargetStore, options: AdminOptions): Hon
 
     try {
       if (id) {
-        const target = await store.setActiveTargetById(id);
-        console.log(`[proxy] active target switched to ${target.url} (${target.label})`);
+        const environment = await store.setActiveEnvironmentById(id);
+        console.log(`[proxy] active environment switched to ${environment.url} (${environment.label})`);
       } else if (url) {
-        const sanitized = normalizeTargetUrl(url);
-        await store.setActiveTargetUrl(sanitized);
-        console.log(`[proxy] active target switched to ${sanitized}`);
+        const sanitized = normalizeEnvironmentUrl(url);
+        await store.setActiveEnvironmentUrl(sanitized);
+        console.log(`[proxy] active environment switched to ${sanitized}`);
       } else {
         return respondError(c, preferHtml, 'Please provide an environment URL or environment ID.');
       }
@@ -55,7 +55,8 @@ export function buildAdminRouter(store: TargetStore, options: AdminOptions): Hon
   });
 
   admin.get('/targets', (c) => {
-    return c.json({ targets: store.getTargets() });
+    const environments = store.getEnvironments();
+    return c.json({ targets: environments, environments });
   });
 
   admin.post('/targets', async (c) => {
@@ -69,7 +70,7 @@ export function buildAdminRouter(store: TargetStore, options: AdminOptions): Hon
     }
 
     try {
-      const record = await store.addTarget({ label, url: normalizeTargetUrl(url) });
+      const record = await store.addEnvironment({ label, url: normalizeEnvironmentUrl(url) });
       return respondSuccess(c, preferHtml, { target: record }, 'Environment added.');
     } catch (error) {
       return respondError(c, preferHtml, error instanceof Error ? error.message : 'Failed to add environment.');
@@ -88,7 +89,7 @@ export function buildAdminRouter(store: TargetStore, options: AdminOptions): Hon
     }
 
     try {
-      const record = await store.updateTarget(id, { label, url: normalizeTargetUrl(url) });
+      const record = await store.updateEnvironment(id, { label, url: normalizeEnvironmentUrl(url) });
       return respondSuccess(c, preferHtml, { target: record }, 'Environment updated.');
     } catch (error) {
       return respondError(c, preferHtml, error instanceof Error ? error.message : 'Failed to update environment.');
@@ -99,7 +100,7 @@ export function buildAdminRouter(store: TargetStore, options: AdminOptions): Hon
     const preferHtml = prefersHtml(c);
     const id = c.req.param('id');
     try {
-      await store.deleteTarget(id);
+      await store.deleteEnvironment(id);
       return respondSuccess(c, preferHtml, { ok: true }, 'Environment deleted.');
     } catch (error) {
       return respondError(c, preferHtml, error instanceof Error ? error.message : 'Failed to delete environment.');
@@ -115,7 +116,7 @@ export function buildAdminRouter(store: TargetStore, options: AdminOptions): Hon
       return redirectToAdmin(c, { error: 'Name and URL are required.' });
     }
     try {
-      await store.updateTarget(id, { label, url: normalizeTargetUrl(url) });
+      await store.updateEnvironment(id, { label, url: normalizeEnvironmentUrl(url) });
       return redirectToAdmin(c, { notice: 'Environment updated.' });
     } catch (error) {
       return redirectToAdmin(c, { error: error instanceof Error ? error.message : 'Failed to update.' });
@@ -125,7 +126,7 @@ export function buildAdminRouter(store: TargetStore, options: AdminOptions): Hon
   admin.post('/targets/:id/delete', async (c) => {
     const id = c.req.param('id');
     try {
-      await store.deleteTarget(id);
+      await store.deleteEnvironment(id);
       return redirectToAdmin(c, { notice: 'Environment deleted.' });
     } catch (error) {
       return redirectToAdmin(c, { error: error instanceof Error ? error.message : 'Failed to delete.' });
@@ -150,7 +151,7 @@ function respondError(c: Context, preferHtml: boolean, message: string, status =
   return c.json({ error: message });
 }
 
-function normalizeTargetUrl(url: string): string {
+function normalizeEnvironmentUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) {
     throw new Error('URL is required.');
@@ -171,8 +172,8 @@ function normalizeTargetUrl(url: string): string {
 }
 
 interface PageState {
-  selection: ReturnType<TargetStore['getActiveSelection']>;
-  targets: TargetRecord[];
+  selection: ReturnType<EnvironmentStore['getActiveSelection']>;
+  environments: EnvironmentRecord[];
   dataFilePath: string;
   notice: string | null;
   error: string | null;
@@ -180,8 +181,8 @@ interface PageState {
 
 function renderAdminPage(state: PageState): string {
   const active = state.selection.url;
-  const activeLabel = state.selection.targetId
-    ? state.targets.find((target) => target.id === state.selection.targetId)?.label ?? null
+  const activeLabel = state.selection.environmentId
+    ? state.environments.find((environment) => environment.id === state.selection.environmentId)?.label ?? null
     : null;
   return `<!DOCTYPE html>
 <html lang="en">
@@ -202,11 +203,11 @@ function renderAdminPage(state: PageState): string {
       button.danger { background: #ef4444; }
       code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
       ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 16px; }
-      .target-card { border: 1px solid #233040; border-radius: 12px; padding: 16px; background: #121922; }
-      .target-card.active { border-color: #3b82f6; }
-      .target-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-      .target-label { font-size: 1rem; font-weight: 600; }
-      .target-url { font-size: 0.9rem; color: #97a6ba; word-break: break-all; }
+      .environment-card { border: 1px solid #233040; border-radius: 12px; padding: 16px; background: #121922; }
+      .environment-card.active { border-color: #3b82f6; }
+      .environment-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+      .environment-label { font-size: 1rem; font-weight: 600; }
+      .environment-url { font-size: 0.9rem; color: #97a6ba; word-break: break-all; }
       .forms { display: flex; flex-direction: column; gap: 8px; }
       .forms form { display: flex; flex-direction: column; gap: 4px; }
       .forms .button-row { display: flex; gap: 8px; }
@@ -255,8 +256,8 @@ function renderAdminPage(state: PageState): string {
       </section>
       <section>
         <h2>Saved Environments</h2>
-        ${state.targets.length === 0 ? '<p class="muted">No environments yet</p>' : `<ul>${state.targets
-          .map((target) => renderTargetCard(target, state.selection))
+        ${state.environments.length === 0 ? '<p class="muted">No environments yet</p>' : `<ul>${state.environments
+          .map((environment) => renderEnvironmentCard(environment, state.selection))
           .join('')}</ul>`}
       </section>
     </div>
@@ -265,32 +266,35 @@ function renderAdminPage(state: PageState): string {
 </html>`;
 }
 
-function renderTargetCard(target: TargetRecord, selection: ReturnType<TargetStore['getActiveSelection']>): string {
-  const isActive = selection.targetId === target.id;
-  const updateFormId = `update-${target.id}`;
-  return `<li class="target-card${isActive ? ' active' : ''}">
-    <div class="target-head">
+function renderEnvironmentCard(
+  environment: EnvironmentRecord,
+  selection: ReturnType<EnvironmentStore['getActiveSelection']>,
+): string {
+  const isActive = selection.environmentId === environment.id;
+  const updateFormId = `update-${environment.id}`;
+  return `<li class="environment-card${isActive ? ' active' : ''}">
+    <div class="environment-head">
       <div>
-        <div class="target-label">${escapeHtml(target.label)}</div>
-        <div class="target-url">${escapeHtml(target.url)}</div>
-        <small>Updated: ${escapeHtml(formatTimestamp(target.updatedAt))}</small>
+        <div class="environment-label">${escapeHtml(environment.label)}</div>
+        <div class="environment-url">${escapeHtml(environment.url)}</div>
+        <small>Updated: ${escapeHtml(formatTimestamp(environment.updatedAt))}</small>
       </div>
       <form method="post" action="${ADMIN_BASE_PATH}/switch">
-        <input type="hidden" name="targetId" value="${escapeHtml(target.id)}" />
+        <input type="hidden" name="targetId" value="${escapeHtml(environment.id)}" />
         <button type="submit" class="secondary">Activate</button>
       </form>
     </div>
     <div class="forms">
-      <form id="${escapeHtml(updateFormId)}" method="post" action="${ADMIN_BASE_PATH}/targets/${escapeHtml(target.id)}/update">
-        <label>Name<input type="text" name="label" value="${escapeHtml(target.label)}" required /></label>
-        <label>URL<input type="url" name="url" value="${escapeHtml(target.url)}" required /></label>
+      <form id="${escapeHtml(updateFormId)}" method="post" action="${ADMIN_BASE_PATH}/targets/${escapeHtml(environment.id)}/update">
+        <label>Name<input type="text" name="label" value="${escapeHtml(environment.label)}" required /></label>
+        <label>URL<input type="url" name="url" value="${escapeHtml(environment.url)}" required /></label>
       </form>
       <div class="card-actions">
-        <form method="post" action="${ADMIN_BASE_PATH}/targets/${escapeHtml(target.id)}/delete" onsubmit="return confirm('Delete this environment?');">
+        <form method="post" action="${ADMIN_BASE_PATH}/targets/${escapeHtml(environment.id)}/delete" onsubmit="return confirm('Delete this environment?');">
           <button type="submit" class="danger">Delete</button>
         </form>
         <button type="submit" class="action-save" form="${escapeHtml(updateFormId)}">Save</button>
-        <a class="button-link secondary-blue" href="${escapeHtml(target.url)}" target="_blank" rel="noopener noreferrer">Open</a>
+        <a class="button-link secondary-blue" href="${escapeHtml(environment.url)}" target="_blank" rel="noopener noreferrer">Open</a>
       </div>
     </div>
   </li>`;

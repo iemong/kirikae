@@ -52,8 +52,9 @@ PROXY_PORT=3333 PROXY_ADMIN_PORT=3334 bun run proxy.ts
 
 ## データファイル
 
-- 既定: `./.proxy-data/targets.json`
-- `PROXY_DATA_DIR` を指定すると `{PROXY_DATA_DIR}/targets.json`
+- 既定: `./.proxy-data/environments.json`
+- `PROXY_DATA_DIR` を指定すると `{PROXY_DATA_DIR}/environments.json`
+- 互換: 旧ファイル `targets.json` が存在し、`environments.json` がない場合は旧ファイルを優先
 
 ファイルは `.gitignore` 済みなので、各環境で独立して管理できます。
 

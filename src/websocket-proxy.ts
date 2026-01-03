@@ -1,6 +1,6 @@
 import type { Server, ServerWebSocket, WebSocketHandler } from 'bun';
 import { combinePaths } from './utils';
-import type { TargetStore } from './store';
+import type { EnvironmentStore } from './environment-store';
 
 interface ProxyWebSocketData {
   upstreamUrl: string;
@@ -19,17 +19,17 @@ const hopByHopWebSocketHeaders = new Set([
 export function handleWebSocketProxy(
   req: Request,
   server: Server,
-  store: TargetStore,
+  store: EnvironmentStore,
 ): Response | null {
   const selection = store.getActiveSelection();
   if (!selection.url) {
-    return new Response('ターゲットが未設定です /__/ で設定してください', { status: 503 });
+    return new Response('エンバイロメントが未設定です /__/ で設定してください', { status: 503 });
   }
 
   const incomingUrl = new URL(req.url);
-  const targetBase = new URL(selection.url);
-  const upstreamUrl = buildUpstreamWebSocketUrl(targetBase, incomingUrl);
-  const headers = extractForwardHeaders(req.headers, targetBase);
+  const environmentBase = new URL(selection.url);
+  const upstreamUrl = buildUpstreamWebSocketUrl(environmentBase, incomingUrl);
+  const headers = extractForwardHeaders(req.headers, environmentBase);
 
   const upgraded = server.upgrade(req, {
     data: {
@@ -109,9 +109,9 @@ export const websocketBridgeHandler: WebSocketHandler<ProxyWebSocketData> = {
   },
 };
 
-function buildUpstreamWebSocketUrl(target: URL, incoming: URL): string {
-  const protocol = target.protocol === 'https:' ? 'wss:' : 'ws:';
-  const base = new URL(target.toString());
+function buildUpstreamWebSocketUrl(environment: URL, incoming: URL): string {
+  const protocol = environment.protocol === 'https:' ? 'wss:' : 'ws:';
+  const base = new URL(environment.toString());
   base.protocol = protocol;
   base.pathname = combinePaths(base.pathname, incoming.pathname);
   base.search = incoming.search;
@@ -119,9 +119,9 @@ function buildUpstreamWebSocketUrl(target: URL, incoming: URL): string {
   return base.toString();
 }
 
-function extractForwardHeaders(headers: Headers, target: URL): Record<string, string> {
+function extractForwardHeaders(headers: Headers, environment: URL): Record<string, string> {
   const forwarded: Record<string, string> = {
-    host: target.host,
+    host: environment.host,
   };
   headers.forEach((value, key) => {
     const lower = key.toLowerCase();
@@ -131,8 +131,7 @@ function extractForwardHeaders(headers: Headers, target: URL): Record<string, st
     forwarded[lower] = value;
   });
   if (!forwarded.origin) {
-    forwarded.origin = `${target.protocol}//${target.host}`;
+    forwarded.origin = `${environment.protocol}//${environment.host}`;
   }
   return forwarded;
 }
-

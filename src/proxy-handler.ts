@@ -1,19 +1,19 @@
 import type { Context } from 'hono';
-import type { TargetStore } from './store';
+import type { EnvironmentStore } from './environment-store';
 import { combinePaths } from './utils';
 
-export async function proxyRequest(c: Context, store: TargetStore): Promise<Response> {
+export async function proxyRequest(c: Context, store: EnvironmentStore): Promise<Response> {
   const selection = store.getActiveSelection();
   if (!selection.url) {
-    return c.text('ターゲットが未設定です /__/ にアクセスして設定してください', 503);
+    return c.text('エンバイロメントが未設定です /__/ にアクセスして設定してください', 503);
   }
 
   const incomingUrl = new URL(c.req.url);
-  const targetBase = new URL(selection.url);
-  const upstreamUrl = buildUpstreamUrl(targetBase, incomingUrl);
+  const environmentBase = new URL(selection.url);
+  const upstreamUrl = buildUpstreamUrl(environmentBase, incomingUrl);
 
   const headers = cloneHeaders(c.req.raw.headers);
-  headers.set('host', targetBase.host);
+  headers.set('host', environmentBase.host);
   headers.set('x-forwarded-host', incomingUrl.host);
   headers.set('x-forwarded-proto', incomingUrl.protocol.replace(':', ''));
   const forwardedFor = c.req.header('x-forwarded-for');
@@ -36,15 +36,15 @@ export async function proxyRequest(c: Context, store: TargetStore): Promise<Resp
     if (isWebSocketUpgrade(upstreamResponse)) {
       return upstreamResponse;
     }
-    return rewriteResponse(upstreamResponse, incomingUrl, targetBase);
+    return rewriteResponse(upstreamResponse, incomingUrl, environmentBase);
   } catch (error) {
     console.error('[proxy] upstream fetch failed', error);
     return c.text('アップストリームへの接続に失敗しました', 502);
   }
 }
 
-function buildUpstreamUrl(target: URL, incoming: URL): string {
-  const url = new URL(target.toString());
+function buildUpstreamUrl(environment: URL, incoming: URL): string {
+  const url = new URL(environment.toString());
   url.pathname = combinePaths(url.pathname, incoming.pathname);
   url.search = incoming.search;
   url.hash = incoming.hash;
@@ -61,12 +61,12 @@ function isWebSocketUpgrade(response: Response): boolean {
   return upgrade !== null && upgrade.toLowerCase() === 'websocket';
 }
 
-function rewriteResponse(response: Response, proxyUrl: URL, targetUrl: URL): Response {
+function rewriteResponse(response: Response, proxyUrl: URL, environmentUrl: URL): Response {
   const location = response.headers.get('location');
   if (!location) {
     return response;
   }
-  const rewritten = rewriteLocation(location, proxyUrl, targetUrl);
+  const rewritten = rewriteLocation(location, proxyUrl, environmentUrl);
   if (!rewritten) {
     return response;
   }
@@ -79,14 +79,14 @@ function rewriteResponse(response: Response, proxyUrl: URL, targetUrl: URL): Res
   });
 }
 
-function rewriteLocation(location: string, proxyUrl: URL, targetUrl: URL): string | null {
+function rewriteLocation(location: string, proxyUrl: URL, environmentUrl: URL): string | null {
   try {
-    const parsed = new URL(location, targetUrl);
-    if (parsed.origin !== targetUrl.origin) {
+    const parsed = new URL(location, environmentUrl);
+    if (parsed.origin !== environmentUrl.origin) {
       return location;
     }
     const proxy = new URL(proxyUrl.origin);
-    const normalizedBase = normalizeBasePath(targetUrl.pathname);
+    const normalizedBase = normalizeBasePath(environmentUrl.pathname);
     const withoutBase = stripBasePath(parsed.pathname, normalizedBase);
     proxy.pathname = withoutBase;
     proxy.search = parsed.search;

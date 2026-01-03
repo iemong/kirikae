@@ -81,6 +81,6 @@ export function redirectToAdmin(c: Context, params: Record<string, string> = {})
   });
   const suffix = search.size > 0 ? `?${search.toString()}` : '';
   const base = ADMIN_BASE_PATH || '';
-  const target = base ? `${base}/${suffix}` : `/${suffix}`;
-  return c.redirect(target);
+  const destination = base ? `${base}/${suffix}` : `/${suffix}`;
+  return c.redirect(destination);
 }

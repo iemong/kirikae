@@ -1,7 +1,7 @@
 # TODO
 
 - [x] 用語統一（target → environment）をコード全体に反映（APIパラメータ名は互換のため維持）
-- [ ] Admin画面をJSX化（`src/admin.ts` → `src/admin.tsx`）
+- [x] Admin画面をJSX化（`src/admin.ts` → `src/admin.tsx`）
 - [ ] 管理画面のHTML/CSSを分割・整理（コンポーネント分割）
 - [ ] HTTP/WSの共通処理抽出（URL/ヘッダー/selection判定の共通化）
 - [ ] ユーザー向けメッセージの統一（日本語/英語の混在解消）

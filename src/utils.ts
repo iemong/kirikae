@@ -34,25 +34,6 @@ export function valueToString(value: unknown): string | null {
   return null;
 }
 
-export function escapeHtml(input: string): string {
-  return input.replace(/[&<>"']/g, (char) => {
-    switch (char) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      case '\'':
-        return '&#39;';
-      default:
-        return char;
-    }
-  });
-}
-
 export function combinePaths(basePath: string, requestPath: string): string {
   if (!basePath || basePath === '/') {
     return normalizePath(requestPath);

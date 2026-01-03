@@ -1,6 +1,5 @@
 import type { Context } from 'hono';
-
-export const ADMIN_BASE_PATH = '';
+import { ADMIN_BASE_PATH } from './config';
 
 export function prefersHtml(c: Context): boolean {
   const accept = c.req.header('accept') ?? '';

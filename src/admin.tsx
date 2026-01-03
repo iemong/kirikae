@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { EnvironmentRecord, EnvironmentStore } from './environment-store';
 import { ADMIN_STYLES } from './admin-styles';
-import { ADMIN_BASE_PATH, prefersHtml, readBody, redirectToAdmin, valueToString } from './utils';
+import { ADMIN_BASE_PATH } from './config';
+import { prefersHtml, readBody, redirectToAdmin, valueToString } from './utils';
 
 interface AdminOptions {
   dataFilePath: string;

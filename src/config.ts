@@ -6,6 +6,7 @@ const DEFAULT_ADMIN_PORT = 4000;
 const DEFAULT_DATA_DIR = '.proxy-data';
 const DATA_FILE_NAME = 'environments.json';
 const LEGACY_DATA_FILE_NAME = 'targets.json';
+export const ADMIN_BASE_PATH = '';
 
 export function getProxyPort(): number {
   const raw = Bun.env.PROXY_PORT;

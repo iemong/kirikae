@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { EnvironmentRecord, EnvironmentStore } from './environment-store';
+import { ADMIN_STYLES } from './admin-styles';
 import { ADMIN_BASE_PATH, prefersHtml, readBody, redirectToAdmin, valueToString } from './utils';
 
 interface AdminOptions {
@@ -179,43 +180,6 @@ interface PageState {
   error: string | null;
 }
 
-const ADMIN_STYLES = `
-  *, *::before, *::after { box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; background: #101418; color: #f4f6fb; }
-  h1 { font-size: 1.5rem; margin-bottom: 16px; }
-  .layout { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 24px; }
-  section { background: #18202a; border-radius: 12px; padding: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.25); }
-  label { display: block; font-size: 0.85rem; color: #9fb3c8; margin-bottom: 4px; }
-  input[type="text"], input[type="url"] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid #2a3948; background: #0f141b; color: #f4f6fb; margin-bottom: 12px; }
-  button { padding: 8px 16px; border: none; border-radius: 999px; background: #3b82f6; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-  button.secondary { background: #2a3948; }
-  button.danger { background: #ef4444; }
-  code { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; }
-  ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 16px; }
-  .environment-card { border: 1px solid #233040; border-radius: 12px; padding: 16px; background: #121922; }
-  .environment-card.active { border-color: #3b82f6; }
-  .environment-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-  .environment-label { font-size: 1rem; font-weight: 600; }
-  .environment-url { font-size: 0.9rem; color: #97a6ba; word-break: break-all; }
-  .forms { display: flex; flex-direction: column; gap: 8px; }
-  .forms form { display: flex; flex-direction: column; gap: 4px; }
-  .forms .button-row { display: flex; gap: 8px; }
-  .card-actions { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-  .card-actions form { margin: 0; }
-  .action-save { margin-left: auto; }
-  .status { margin-bottom: 8px; }
-  .muted { color: #7c8ca3; }
-  .notice { padding: 10px 14px; margin-bottom: 16px; border-radius: 8px; }
-  .notice.success { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
-  .notice.error { background: rgba(248,113,113,0.15); color: #fecaca; border: 1px solid rgba(248,113,113,0.3); }
-  small { color: #6e7e92; }
-  .stack { display: flex; flex-direction: column; gap: 12px; }
-  a { color: #7dd3fc; }
-  .button-link { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; border-radius: 999px; background: #2a3948; color: #fff; font-weight: 600; text-decoration: none; font-size: 0.9rem; border: 1px solid transparent; }
-  .button-link.secondary-blue { background: transparent; border-color: #3b82f6; color: #93c5fd; }
-  .button-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-`;
-
 function AdminPage(state: PageState) {
   const active = state.selection.url;
   const activeLabel = state.selection.environmentId
@@ -231,65 +195,116 @@ function AdminPage(state: PageState) {
       </head>
       <body>
         <h1>KIRIKAE</h1>
-        {state.notice ? <div class="notice success">{state.notice}</div> : null}
-        {state.error ? <div class="notice error">{state.error}</div> : null}
-        <section>
-          <h2 class="status">Current Environment</h2>
-          {active ? (
-            <p>
-              <code>{active}</code>
-            </p>
-          ) : (
-            <p class="muted">Not set</p>
-          )}
-          {activeLabel ? <p class="muted">Name: {activeLabel}</p> : null}
-          {active ? (
-            <div class="button-row" style="margin-top:12px;">
-              <a class="button-link" href={active} target="_blank" rel="noopener noreferrer">
-                Open Environment
-              </a>
-            </div>
-          ) : null}
-        </section>
+        <NoticeBanner notice={state.notice} error={state.error} />
+        <CurrentEnvironmentSection activeUrl={active} activeLabel={activeLabel} />
         <div class="layout">
-          <section>
-            <h2>Add Environment</h2>
-            <form method="post" action={`${ADMIN_BASE_PATH}/targets`} class="stack">
-              <div>
-                <label for="label-input">Name</label>
-                <input id="label-input" type="text" name="label" placeholder="feature/login" required />
-              </div>
-              <div>
-                <label for="url-input">
-                  URL <span class="muted">required</span>
-                </label>
-                <input id="url-input" type="url" name="url" placeholder="http://localhost:4002" required />
-              </div>
-              <button type="submit">Add</button>
-            </form>
-          </section>
-          <section>
-            <h2>Saved Environments</h2>
-            {state.environments.length === 0 ? (
-              <p class="muted">No environments yet</p>
-            ) : (
-              <ul>
-                {state.environments.map((environment) => (
-                  <EnvironmentCard
-                    environment={environment}
-                    selection={state.selection}
-                    key={environment.id}
-                  />
-                ))}
-              </ul>
-            )}
-          </section>
+          <AddEnvironmentSection />
+          <SavedEnvironmentsSection
+            environments={state.environments}
+            selection={state.selection}
+          />
         </div>
-        <p class="muted" style="margin-top:24px;">
-          Data file: <code>{state.dataFilePath}</code>
+        <DataFileFooter path={state.dataFilePath} />
+        <ConfirmScript />
+      </body>
+    </html>
+  );
+}
+
+function NoticeBanner({ notice, error }: { notice: string | null; error: string | null }) {
+  return (
+    <>
+      {notice ? <div class="notice success">{notice}</div> : null}
+      {error ? <div class="notice error">{error}</div> : null}
+    </>
+  );
+}
+
+function CurrentEnvironmentSection({
+  activeUrl,
+  activeLabel,
+}: {
+  activeUrl: string | null;
+  activeLabel: string | null;
+}) {
+  return (
+    <section>
+      <h2 class="status">Current Environment</h2>
+      {activeUrl ? (
+        <p>
+          <code>{activeUrl}</code>
         </p>
-        <script>
-          {`document.addEventListener('submit', (event) => {
+      ) : (
+        <p class="muted">Not set</p>
+      )}
+      {activeLabel ? <p class="muted">Name: {activeLabel}</p> : null}
+      {activeUrl ? (
+        <div class="button-row" style="margin-top:12px;">
+          <a class="button-link" href={activeUrl} target="_blank" rel="noopener noreferrer">
+            Open Environment
+          </a>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function AddEnvironmentSection() {
+  return (
+    <section>
+      <h2>Add Environment</h2>
+      <form method="post" action={`${ADMIN_BASE_PATH}/targets`} class="stack">
+        <div>
+          <label for="label-input">Name</label>
+          <input id="label-input" type="text" name="label" placeholder="feature/login" required />
+        </div>
+        <div>
+          <label for="url-input">
+            URL <span class="muted">required</span>
+          </label>
+          <input id="url-input" type="url" name="url" placeholder="http://localhost:4002" required />
+        </div>
+        <button type="submit">Add</button>
+      </form>
+    </section>
+  );
+}
+
+function SavedEnvironmentsSection({
+  environments,
+  selection,
+}: {
+  environments: EnvironmentRecord[];
+  selection: ReturnType<EnvironmentStore['getActiveSelection']>;
+}) {
+  return (
+    <section>
+      <h2>Saved Environments</h2>
+      {environments.length === 0 ? (
+        <p class="muted">No environments yet</p>
+      ) : (
+        <ul>
+          {environments.map((environment) => (
+            <EnvironmentCard environment={environment} selection={selection} key={environment.id} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function DataFileFooter({ path }: { path: string }) {
+  return (
+    <p class="muted" style="margin-top:24px;">
+      Data file: <code>{path}</code>
+    </p>
+  );
+}
+
+function ConfirmScript() {
+  return (
+    <script>
+      {`document.addEventListener('submit', (event) => {
   const target = event.target;
   if (!(target instanceof HTMLFormElement)) return;
   const message = target.getAttribute('data-confirm');
@@ -297,9 +312,7 @@ function AdminPage(state: PageState) {
     event.preventDefault();
   }
 });`}
-        </script>
-      </body>
-    </html>
+    </script>
   );
 }
 

@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 
@@ -38,6 +38,7 @@ function createEmptyData(): PersistedData {
 export class EnvironmentStore {
   private data: PersistedData = createEmptyData();
   private initPromise: Promise<void> | null = null;
+  private persistQueue: Promise<void> = Promise.resolve();
 
   constructor(private readonly filePath: string) {}
 
@@ -148,6 +149,14 @@ export class EnvironmentStore {
   }
 
   private async persist(): Promise<void> {
+    this.persistQueue = this.persistQueue.then(
+      () => this.flushToDisk(),
+      () => this.flushToDisk(),
+    );
+    return this.persistQueue;
+  }
+
+  private async flushToDisk(): Promise<void> {
     const dir = dirname(this.filePath);
     await mkdir(dir, { recursive: true });
     const payload: PersistedData & LegacyPersistedData = {
@@ -158,6 +167,9 @@ export class EnvironmentStore {
       activeTargetId: this.data.activeEnvironmentId,
       activeTargetUrl: this.data.activeEnvironmentUrl,
     };
-    await writeFile(this.filePath, JSON.stringify(payload, null, 2), 'utf8');
+    const nonce = Math.random().toString(16).slice(2);
+    const tmpPath = `${this.filePath}.${Date.now()}.${nonce}.tmp`;
+    await writeFile(tmpPath, JSON.stringify(payload, null, 2), 'utf8');
+    await rename(tmpPath, this.filePath);
   }
 }

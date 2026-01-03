@@ -11,7 +11,29 @@ interface AdminOptions {
 export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions): Hono {
   const admin = new Hono();
 
-  admin.get('/', (c) => {
+  admin.get('/', createIndexHandler(store, options));
+
+  admin.get('/status', createStatusHandler(store));
+
+  admin.post('/switch', createSwitchHandler(store));
+
+  admin.get('/targets', createTargetsListHandler(store));
+
+  admin.post('/targets', createAddEnvironmentHandler(store));
+
+  admin.put('/targets/:id', createUpdateEnvironmentHandler(store));
+
+  admin.delete('/targets/:id', createDeleteEnvironmentHandler(store));
+
+  admin.post('/targets/:id/update', createUpdateEnvironmentFormHandler(store));
+
+  admin.post('/targets/:id/delete', createDeleteEnvironmentFormHandler(store));
+
+  return admin;
+}
+
+function createIndexHandler(store: EnvironmentStore, options: AdminOptions) {
+  return (c: Context) => {
     const selection = store.getActiveSelection();
     const environments = store.getEnvironments();
     const error = c.req.query('error');
@@ -24,14 +46,18 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
       error: error ?? null,
     };
     return c.html(<AdminPage {...pageState} />);
-  });
+  };
+}
 
-  admin.get('/status', (c) => {
+function createStatusHandler(store: EnvironmentStore) {
+  return (c: Context) => {
     const selection = store.getActiveSelection();
     return c.json({ target: selection.url });
-  });
+  };
+}
 
-  admin.post('/switch', async (c) => {
+function createSwitchHandler(store: EnvironmentStore) {
+  return async (c: Context) => {
     const preferHtml = prefersHtml(c);
     const body = await readBody(c);
     const id = valueToString(body.targetId ?? body.id);
@@ -52,14 +78,18 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
     }
 
     return respondSuccess(c, preferHtml, { target: store.getActiveSelection().url }, 'Environment switched.');
-  });
+  };
+}
 
-  admin.get('/targets', (c) => {
+function createTargetsListHandler(store: EnvironmentStore) {
+  return (c: Context) => {
     const environments = store.getEnvironments();
     return c.json({ targets: environments, environments });
-  });
+  };
+}
 
-  admin.post('/targets', async (c) => {
+function createAddEnvironmentHandler(store: EnvironmentStore) {
+  return async (c: Context) => {
     const preferHtml = prefersHtml(c);
     const body = await readBody(c);
     const label = valueToString(body.label);
@@ -75,9 +105,11 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
     } catch (error) {
       return respondError(c, preferHtml, error instanceof Error ? error.message : 'Failed to add environment.');
     }
-  });
+  };
+}
 
-  admin.put('/targets/:id', async (c) => {
+function createUpdateEnvironmentHandler(store: EnvironmentStore) {
+  return async (c: Context) => {
     const preferHtml = prefersHtml(c);
     const id = c.req.param('id');
     const body = await readBody(c);
@@ -94,9 +126,11 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
     } catch (error) {
       return respondError(c, preferHtml, error instanceof Error ? error.message : 'Failed to update environment.');
     }
-  });
+  };
+}
 
-  admin.delete('/targets/:id', async (c) => {
+function createDeleteEnvironmentHandler(store: EnvironmentStore) {
+  return async (c: Context) => {
     const preferHtml = prefersHtml(c);
     const id = c.req.param('id');
     try {
@@ -105,9 +139,11 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
     } catch (error) {
       return respondError(c, preferHtml, error instanceof Error ? error.message : 'Failed to delete environment.');
     }
-  });
+  };
+}
 
-  admin.post('/targets/:id/update', async (c) => {
+function createUpdateEnvironmentFormHandler(store: EnvironmentStore) {
+  return async (c: Context) => {
     const id = c.req.param('id');
     const body = await readBody(c);
     const label = valueToString(body.label);
@@ -121,9 +157,11 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
     } catch (error) {
       return redirectToAdmin(c, { error: error instanceof Error ? error.message : 'Failed to update.' });
     }
-  });
+  };
+}
 
-  admin.post('/targets/:id/delete', async (c) => {
+function createDeleteEnvironmentFormHandler(store: EnvironmentStore) {
+  return async (c: Context) => {
     const id = c.req.param('id');
     try {
       await store.deleteEnvironment(id);
@@ -131,9 +169,7 @@ export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions)
     } catch (error) {
       return redirectToAdmin(c, { error: error instanceof Error ? error.message : 'Failed to delete.' });
     }
-  });
-
-  return admin;
+  };
 }
 
 function respondSuccess(c: Context, preferHtml: boolean, payload: Record<string, unknown>, notice?: string): Response {

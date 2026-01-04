@@ -67,6 +67,28 @@ RELEASE_TAG=v1.0.0 bun run release:publish
 
 ※ `gh` (GitHub CLI) が必要です。
 
+## Changesets（リリース管理）
+
+Changesets を導入しています。基本フローは以下です。
+
+1) 変更内容を作成
+```bash
+bun run changeset
+```
+
+2) バージョン更新（`package.json` / `CHANGELOG.md` 生成）
+```bash
+bun run changeset:version
+```
+
+3) タグ作成＆push（例）
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+タグpushで CI が GitHub Release を作成します。
+
 ### 環境変数
 
 | 変数 | 既定値 | 説明 |

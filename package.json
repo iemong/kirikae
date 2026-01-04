@@ -1,5 +1,6 @@
 {
   "name": "worktree-proxy",
+  "version": "1.0.0",
   "module": "proxy.ts",
   "type": "module",
   "scripts": {

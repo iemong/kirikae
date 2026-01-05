@@ -23,6 +23,13 @@ for target in "${TARGETS[@]}"; do
   fi
   echo "[build] $outfile"
   bun build --compile --target "bun-${target}" --outfile "$outfile" proxy.ts
+
+  # Ad-hoc sign macOS binaries to avoid Gatekeeper issues
+  if [[ "$target" == darwin-* ]] && command -v codesign >/dev/null 2>&1; then
+    echo "[sign] $outfile"
+    codesign --sign - --force --deep "$outfile" 2>/dev/null || true
+  fi
+
   if [[ "$target" == windows-* ]]; then
     zip -j -q "$OUT_DIR/${NAME}-${target}.zip" "$outfile"
   else

@@ -41,3 +41,9 @@ jobs:
         with:
           files: release/*
           generate_release_notes: true
+
+      - name: Publish to JSR (tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: bunx jsr publish --allow-dirty
+        env:
+          JSR_TOKEN: ${{ secrets.JSR_TOKEN }}

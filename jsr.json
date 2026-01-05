@@ -1,0 +1,19 @@
+{
+  "name": "@iemong/kirikae",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./proxy.ts"
+  },
+  "publish": {
+    "exclude": [
+      ".proxy-data",
+      "release",
+      "dist",
+      "coverage",
+      "node_modules",
+      ".changesets",
+      "*.test.ts",
+      "*.spec.ts"
+    ]
+  }
+}

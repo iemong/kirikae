@@ -1,8 +1,14 @@
 {
-  "name": "worktree-proxy",
+  "name": "@iemong/kirikae",
   "version": "1.0.0",
   "module": "proxy.ts",
   "type": "module",
+  "bin": {
+    "kirikae": "./proxy.ts"
+  },
+  "exports": {
+    ".": "./proxy.ts"
+  },
   "scripts": {
     "start": "bun run proxy.ts",
     "dev": "bun run --watch proxy.ts",
@@ -11,13 +17,12 @@
     "check": "biome check .",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
-    "build:binary": "bun build --compile --outfile ./dist/kirikae proxy.ts",
-    "build:release": "bash ./scripts/build-release.sh",
-    "release:publish": "bash ./scripts/publish-release.sh",
     "changeset": "changeset",
-    "changeset:version": "changeset version",
+    "changeset:version": "changeset version && bun run sync-version",
     "changeset:publish": "changeset publish",
-    "changeset:status": "changeset status"
+    "changeset:status": "changeset status",
+    "sync-version": "bun run scripts/sync-version.ts",
+    "publish:jsr": "bunx jsr publish"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.10",

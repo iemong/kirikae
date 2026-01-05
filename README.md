@@ -2,7 +2,24 @@
 
 `git worktree` で並行稼働させた複数の dev server（エンバイロメント）を、1 つの固定 URL 経由で切り替えるためのローカル開発用リバースプロキシです。ブラウザの URL や Cookie を保ったまま、対象サーバーだけを切り替えられます。プロキシ本体と管理 UI/API は別ポートで待ち受けるため、フロントエンドのルーティングと干渉しません。
 
-## 必要要件
+## インストール
+
+### JSR から（推奨）
+
+```bash
+# 直接実行（インストール不要）
+bunx jsr:@iemong/kirikae
+
+# グローバルインストール
+bun add -g jsr:@iemong/kirikae
+kirikae
+```
+
+### バイナリ版
+
+GitHub Releases から OS に応じたバイナリをダウンロードして実行できます。
+
+### 開発版（ソースから）
 
 - Bun 1.1 以降
 
@@ -15,7 +32,10 @@ bun install
 ## 起動方法
 
 ```bash
-# 例: プロキシを 3333 番ポート、管理UIを 3334 番で起動
+# JSR からインストールした場合
+PROXY_PORT=3333 PROXY_ADMIN_PORT=3334 kirikae
+
+# 開発版の場合
 PROXY_PORT=3333 PROXY_ADMIN_PORT=3334 bun run proxy.ts
 ```
 
@@ -67,7 +87,21 @@ RELEASE_TAG=v1.0.0 bun run release:publish
 
 ※ `gh` (GitHub CLI) が必要です。
 
-## Changesets（リリース管理）
+## リリース管理
+
+### JSR への公開
+
+1) バージョン更新
+```bash
+# jsr.json と package.json のバージョンを手動で更新
+```
+
+2) JSR に公開
+```bash
+bun run publish:jsr
+```
+
+### Changesets（バイナリリリース用）
 
 Changesets を導入しています。基本フローは以下です。
 

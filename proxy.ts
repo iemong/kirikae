@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { Hono } from 'hono';
 import { buildAdminRouter } from './src/admin';
 import { getAdminPort, getDataFilePath, getProxyPort } from './src/config';

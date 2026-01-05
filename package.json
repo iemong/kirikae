@@ -10,6 +10,7 @@
     "format": "biome format .",
     "check": "biome check .",
     "test": "bun test",
+    "test:coverage": "bun test --coverage",
     "build:binary": "bun build --compile --outfile ./dist/kirikae proxy.ts",
     "build:release": "bash ./scripts/build-release.sh",
     "release:publish": "bash ./scripts/publish-release.sh",

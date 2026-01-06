@@ -1,6 +1,6 @@
 {
   "name": "@iemong/kirikae",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "module": "proxy.ts",
   "type": "module",
   "bin": {

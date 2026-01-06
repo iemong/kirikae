@@ -10,7 +10,7 @@ const dataFilePath = getDataFilePath();
 const store = new EnvironmentStore(dataFilePath);
 await store.init();
 
-const proxyApp = new Hono();
+const proxyApp: Hono = new Hono();
 const adminApp = buildAdminRouter(store, { dataFilePath });
 proxyApp.all('*', (c) => proxyRequest(c, store));
 

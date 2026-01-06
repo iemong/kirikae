@@ -10,22 +10,36 @@ const DATA_FILE_NAME = 'environments.json';
 const LEGACY_DATA_FILE_NAME = 'targets.json';
 export const ADMIN_BASE_PATH = '';
 
+function getEnvValue(key: string): string | undefined {
+  const bun = (globalThis as { Bun?: { env?: Record<string, string> } }).Bun;
+  const deno = (globalThis as { Deno?: { env?: { get?: (key: string) => string | undefined } } }).Deno;
+  const nodeProcess = (globalThis as { process?: { env?: Record<string, string> } }).process;
+  const bunValue = bun?.env?.[key];
+  const denoValue = deno?.env?.get?.(key);
+  const nodeValue = nodeProcess?.env?.[key];
+  return bunValue ?? denoValue ?? nodeValue;
+}
+
+function getHomeDir(): string {
+  return getEnvValue('HOME') ?? getEnvValue('USERPROFILE') ?? homedir();
+}
+
 export function getProxyPort(): number {
-  const raw = Bun.env.PROXY_PORT;
+  const raw = getEnvValue('PROXY_PORT');
   if (!raw) return DEFAULT_PROXY_PORT;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) ? parsed : DEFAULT_PROXY_PORT;
 }
 
 export function getAdminPort(): number {
-  const raw = Bun.env.PROXY_ADMIN_PORT;
+  const raw = getEnvValue('PROXY_ADMIN_PORT');
   if (!raw) return DEFAULT_ADMIN_PORT;
   const parsed = Number.parseInt(raw, 10);
   return Number.isFinite(parsed) ? parsed : DEFAULT_ADMIN_PORT;
 }
 
 function getDataDirOverride(): string | null {
-  const override = Bun.env.PROXY_DATA_DIR?.trim();
+  const override = getEnvValue('PROXY_DATA_DIR')?.trim();
   if (override && override.length > 0) {
     return resolve(override);
   }
@@ -37,7 +51,7 @@ export function getDataDir(): string {
   if (override) {
     return override;
   }
-  return resolve(homedir(), DEFAULT_HOME_DATA_DIR);
+  return resolve(getHomeDir(), DEFAULT_HOME_DATA_DIR);
 }
 
 export function getDataFilePath(): string {

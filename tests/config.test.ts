@@ -2,7 +2,35 @@ import { describe, expect, it, beforeEach, afterEach } from 'bun:test';
 import { getProxyPort, getAdminPort, getDataDir, getDataFilePath } from '../src/config';
 import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { homedir } from 'node:os';
+
+const testHome = resolve(process.cwd(), '.test-home');
+const originalHome = process.env.HOME;
+const originalBunHome = Bun.env.HOME;
+
+beforeEach(() => {
+  if (existsSync(testHome)) {
+    rmSync(testHome, { recursive: true, force: true });
+  }
+  mkdirSync(testHome, { recursive: true });
+  process.env.HOME = testHome;
+  Bun.env.HOME = testHome;
+});
+
+afterEach(() => {
+  if (originalHome !== undefined) {
+    process.env.HOME = originalHome;
+  } else {
+    delete process.env.HOME;
+  }
+  if (originalBunHome !== undefined) {
+    Bun.env.HOME = originalBunHome;
+  } else {
+    delete Bun.env.HOME;
+  }
+  if (existsSync(testHome)) {
+    rmSync(testHome, { recursive: true, force: true });
+  }
+});
 
 describe('getProxyPort', () => {
   const originalEnv = Bun.env.PROXY_PORT;
@@ -71,7 +99,7 @@ describe('getDataDir', () => {
 
   it('returns home directory default when no override', () => {
     delete Bun.env.PROXY_DATA_DIR;
-    expect(getDataDir()).toBe(resolve(homedir(), '.kirikae'));
+    expect(getDataDir()).toBe(resolve(testHome, '.kirikae'));
   });
 
   it('returns override directory when env var is set', () => {
@@ -81,14 +109,14 @@ describe('getDataDir', () => {
 
   it('ignores empty override', () => {
     Bun.env.PROXY_DATA_DIR = '  ';
-    expect(getDataDir()).toBe(resolve(homedir(), '.kirikae'));
+    expect(getDataDir()).toBe(resolve(testHome, '.kirikae'));
   });
 });
 
 describe('getDataFilePath', () => {
   const originalEnv = Bun.env.PROXY_DATA_DIR;
   const testDir = resolve(process.cwd(), '.test-data');
-  const homeDataDir = resolve(homedir(), '.kirikae');
+  const homeDataDir = resolve(testHome, '.kirikae');
   const legacyDataDir = resolve('.proxy-data');
 
   beforeEach(() => {

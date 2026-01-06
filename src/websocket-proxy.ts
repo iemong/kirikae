@@ -1,4 +1,3 @@
-import type { Server, ServerWebSocket, WebSocketHandler } from 'bun';
 import type { EnvironmentStore } from './environment-store';
 import { buildUpstreamWebSocketUrl, buildWebSocketForwardHeaders, getActiveEnvironmentBase } from './proxy-shared';
 
@@ -8,9 +7,29 @@ interface ProxyWebSocketData {
   upstream?: WebSocket;
 }
 
+type BunServer = {
+  upgrade: (req: Request, options: { data: ProxyWebSocketData }) => boolean;
+};
+
+type BunWebSocket = {
+  data: ProxyWebSocketData;
+  readyState: number;
+  OPEN: number;
+  CLOSING: number;
+  send: (data: unknown) => void;
+  close: (code?: number, reason?: string) => void;
+};
+
+type BunWebSocketHandler = {
+  open?: (ws: BunWebSocket) => void;
+  message?: (ws: BunWebSocket, message: unknown) => void;
+  close?: (ws: BunWebSocket, code?: number, reason?: string) => void;
+  error?: (ws: BunWebSocket) => void;
+};
+
 export function handleWebSocketProxy(
   req: Request,
-  server: Server,
+  server: BunServer,
   store: EnvironmentStore,
 ): Response | null {
   const environmentBase = getActiveEnvironmentBase(store);
@@ -36,7 +55,7 @@ export function handleWebSocketProxy(
   return null;
 }
 
-export const websocketBridgeHandler: WebSocketHandler<ProxyWebSocketData> = {
+export const websocketBridgeHandler: BunWebSocketHandler = {
   open(ws) {
     const { upstreamUrl, headers } = ws.data;
     try {

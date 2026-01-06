@@ -1,5 +1,11 @@
 # worktree-proxy
 
+## 1.0.5
+
+### Patch Changes
+
+- Add Deno runtime support (env handling + WebSocket proxy).
+
 ## 1.0.4
 
 ### Patch Changes

@@ -11,6 +11,9 @@ bunx jsr:@iemong/kirikae
 # グローバルインストール
 bun add -g jsr:@iemong/kirikae
 kirikae
+
+# denoで起動
+PROXY_PORT=3200 PROXY_ADMIN_PORT=4004 deno run -A jsr:@iemong/kirikae
 ```
 
 ### 開発版（ソースから）

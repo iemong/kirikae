@@ -102,11 +102,14 @@ function createAddEnvironmentHandler(store: EnvironmentStore) {
     const preferHtml = prefersHtml(c);
     const body = await readBody(c);
     const label = valueToString(body.label);
-    const url = valueToString(body.url);
+    const baseUrl = valueToString(body.url);
+    const port = valueToString(body.port);
 
-    if (!label || !url) {
+    if (!label || !baseUrl) {
       return respondError(c, preferHtml, 'Name and URL are required.');
     }
+
+    const url = port ? `${baseUrl.replace(/\/+$/, '')}:${port}` : baseUrl;
 
     try {
       const record = await store.addEnvironment({ label, url });
@@ -287,7 +290,11 @@ function AddEnvironmentSection() {
           <label for="url-input">
             URL <span class="muted">required</span>
           </label>
-          <input id="url-input" type="url" name="url" placeholder="http://localhost:4002" required />
+          <input id="url-input" type="url" name="url" value="http://localhost" required />
+        </div>
+        <div>
+          <label for="port-input">Port</label>
+          <input id="port-input" type="number" name="port" placeholder="3000" min="1" max="65535" />
         </div>
         <button type="submit">Add</button>
       </form>

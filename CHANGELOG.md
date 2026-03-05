@@ -1,5 +1,12 @@
 # worktree-proxy
 
+## 1.0.9
+
+### Patch Changes
+
+- Add port field and default URL to Add Environment form
+- Update README with Deno startup instructions
+
 ## 1.0.8
 
 ### Patch Changes

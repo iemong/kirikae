@@ -1,5 +1,12 @@
 # worktree-proxy
 
+## 1.0.11
+
+### Patch Changes
+
+- Add knip for unused code detection and lefthook pre-commit hook
+- Remove unused exports (ActiveEnvironmentSelection, BodyPayload)
+
 ## 1.0.10
 
 ### Patch Changes

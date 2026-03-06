@@ -29,7 +29,7 @@ interface LegacyPersistedData {
 }
 
 /** The currently active environment selection. */
-export interface ActiveEnvironmentSelection {
+interface ActiveEnvironmentSelection {
   /** Active upstream URL, or `null` if none is selected. */
   url: string | null;
   /** ID of the selected environment record, or `null` for ad-hoc URLs. */

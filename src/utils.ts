@@ -8,7 +8,7 @@ export function prefersHtml(c: Context): boolean {
 }
 
 /** A parsed request body represented as a string-keyed record. */
-export type BodyPayload = Record<string, unknown>;
+type BodyPayload = Record<string, unknown>;
 
 /** Parse the request body as JSON or form data and return it as a record. */
 export async function readBody(c: Context): Promise<BodyPayload> {

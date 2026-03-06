@@ -1,4 +1,9 @@
 #!/usr/bin/env bun
+/**
+ * @module
+ * Kirikae — A lightweight reverse-proxy that lets you switch between multiple
+ * upstream environments on the fly via an admin UI. Supports Bun and Deno runtimes.
+ */
 import { Hono } from 'hono';
 import { buildAdminRouter } from './src/admin';
 import { getAdminPort, getDataFilePath, getProxyPort } from './src/config';
@@ -80,4 +85,5 @@ if (import.meta.main) {
   console.log(`[admin] UI/API available at http://localhost:${adminPort}/`);
 }
 
+/** The Hono application that proxies all incoming requests to the active upstream environment. */
 export { proxyApp };

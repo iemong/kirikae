@@ -11,6 +11,7 @@ interface AdminOptions {
   dataFilePath: string;
 }
 
+/** Build the Hono router that serves the admin UI and API endpoints. */
 export function buildAdminRouter(store: EnvironmentStore, options: AdminOptions): Hono {
   const admin = new Hono();
 

@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import type { EnvironmentStore } from './environment-store';
 import { buildHttpForwardHeaders, buildUpstreamHttpUrl, getActiveEnvironmentBase } from './proxy-shared';
 
+/** Forward an incoming HTTP request to the active upstream environment. */
 export async function proxyRequest(c: Context, store: EnvironmentStore): Promise<Response> {
   const environmentBase = getActiveEnvironmentBase(store);
   if (!environmentBase) {

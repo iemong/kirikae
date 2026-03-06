@@ -9,4 +9,5 @@ function decode(s: string): Uint8Array {
   return u;
 }
 
+/** 16x16 PNG favicon decoded from an embedded base64 string. */
 export const FAVICON_PNG: Uint8Array = decode(B64);

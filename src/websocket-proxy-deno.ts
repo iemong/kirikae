@@ -26,6 +26,7 @@ function connectUpstreamWebSocket(url: string, headers: Record<string, string>):
   return new WebSocket(url);
 }
 
+/** Upgrade an incoming request to a WebSocket and bridge it to the upstream (Deno runtime). */
 export function handleDenoWebSocketProxy(req: Request, store: EnvironmentStore): Response {
   const deno = getDeno();
   if (!deno?.upgradeWebSocket) {

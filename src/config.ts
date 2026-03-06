@@ -8,6 +8,7 @@ const DEFAULT_DATA_DIR = '.proxy-data';
 const DEFAULT_HOME_DATA_DIR = '.kirikae';
 const DATA_FILE_NAME = 'environments.json';
 const LEGACY_DATA_FILE_NAME = 'targets.json';
+/** Base URL path prefix for the admin UI routes. */
 export const ADMIN_BASE_PATH = '';
 
 function getEnvValue(key: string): string | undefined {
@@ -24,6 +25,7 @@ function getHomeDir(): string {
   return getEnvValue('HOME') ?? getEnvValue('USERPROFILE') ?? homedir();
 }
 
+/** Return the proxy listening port (env `PROXY_PORT`, default 3200). */
 export function getProxyPort(): number {
   const raw = getEnvValue('PROXY_PORT');
   if (!raw) return DEFAULT_PROXY_PORT;
@@ -31,6 +33,7 @@ export function getProxyPort(): number {
   return Number.isFinite(parsed) ? parsed : DEFAULT_PROXY_PORT;
 }
 
+/** Return the admin UI listening port (env `PROXY_ADMIN_PORT`, default 4000). */
 export function getAdminPort(): number {
   const raw = getEnvValue('PROXY_ADMIN_PORT');
   if (!raw) return DEFAULT_ADMIN_PORT;
@@ -46,6 +49,7 @@ function getDataDirOverride(): string | null {
   return null;
 }
 
+/** Return the directory used to store environment data. */
 export function getDataDir(): string {
   const override = getDataDirOverride();
   if (override) {
@@ -54,6 +58,7 @@ export function getDataDir(): string {
   return resolve(getHomeDir(), DEFAULT_HOME_DATA_DIR);
 }
 
+/** Resolve the path to the environments JSON file, respecting legacy locations. */
 export function getDataFilePath(): string {
   const override = getDataDirOverride();
   const dataDir = getDataDir();

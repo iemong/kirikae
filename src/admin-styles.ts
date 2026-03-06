@@ -1,3 +1,4 @@
+/** CSS styles for the admin UI. */
 export const ADMIN_STYLES = `
   *, *::before, *::after { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; background: #101418; color: #f4f6fb; }

@@ -27,6 +27,7 @@ type BunWebSocketHandler = {
   error?: (ws: BunWebSocket) => void;
 };
 
+/** Upgrade an incoming request to a WebSocket and bridge it to the upstream (Bun runtime). */
 export function handleWebSocketProxy(
   req: Request,
   server: BunServer,
@@ -55,6 +56,7 @@ export function handleWebSocketProxy(
   return null;
 }
 
+/** Bun WebSocket handler that bridges messages between the client and the upstream. */
 export const websocketBridgeHandler: BunWebSocketHandler = {
   open(ws) {
     const { upstreamUrl, headers } = ws.data;

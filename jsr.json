@@ -1,6 +1,7 @@
 {
   "name": "@iemong/kirikae",
-  "version": "1.0.9",
+  "version": "1.0.10",
+  "description": "A lightweight reverse-proxy with an admin UI for switching between multiple upstream environments. Supports Bun and Deno.",
   "license": "MIT",
   "exports": {
     ".": "./proxy.ts"

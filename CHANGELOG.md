@@ -1,5 +1,12 @@
 # worktree-proxy
 
+## 1.0.10
+
+### Patch Changes
+
+- Add JSDoc documentation to all exported symbols for JSR score
+- Add package description to jsr.json
+
 ## 1.0.9
 
 ### Patch Changes

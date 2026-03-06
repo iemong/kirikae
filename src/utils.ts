@@ -1,13 +1,16 @@
 import type { Context } from 'hono';
 import { ADMIN_BASE_PATH } from './config';
 
+/** Check whether the request prefers an HTML response via the Accept header. */
 export function prefersHtml(c: Context): boolean {
   const accept = c.req.header('accept') ?? '';
   return accept.includes('text/html');
 }
 
+/** A parsed request body represented as a string-keyed record. */
 export type BodyPayload = Record<string, unknown>;
 
+/** Parse the request body as JSON or form data and return it as a record. */
 export async function readBody(c: Context): Promise<BodyPayload> {
   const contentType = (c.req.header('content-type') ?? '').toLowerCase();
   if (contentType.includes('application/json')) {
@@ -22,6 +25,7 @@ export async function readBody(c: Context): Promise<BodyPayload> {
   return form as BodyPayload;
 }
 
+/** Coerce a value to a trimmed string, returning `null` for empty or non-string values. */
 export function valueToString(value: unknown): string | null {
   if (typeof value === 'string') {
     const trimmed = value.trim();
@@ -33,6 +37,7 @@ export function valueToString(value: unknown): string | null {
   return null;
 }
 
+/** Combine a base path and a request path into a single normalised path. */
 export function combinePaths(basePath: string, requestPath: string): string {
   if (!basePath || basePath === '/') {
     return normalizePath(requestPath);
@@ -52,6 +57,7 @@ function normalizePath(pathname: string): string {
   return pathname.startsWith('/') ? pathname : `/${pathname}`;
 }
 
+/** Issue a redirect response to the admin UI, optionally with query parameters. */
 export function redirectToAdmin(c: Context, params: Record<string, string> = {}): Response {
   const search = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {

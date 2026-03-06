@@ -9,20 +9,24 @@ const hopByHopWebSocketHeaders = new Set([
   'sec-websocket-extensions',
 ]);
 
+/** Return the base URL of the currently active environment, or `null`. */
 export function getActiveEnvironmentBase(store: EnvironmentStore): URL | null {
   const selection = store.getActiveSelection();
   return selection.url ? new URL(selection.url) : null;
 }
 
+/** Build the full upstream HTTP URL for a given incoming request URL. */
 export function buildUpstreamHttpUrl(base: URL, incoming: URL): string {
   return buildUpstreamUrl(base, incoming, { includeHash: true });
 }
 
+/** Build the full upstream WebSocket URL (ws/wss) for a given incoming request URL. */
 export function buildUpstreamWebSocketUrl(base: URL, incoming: URL): string {
   const protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
   return buildUpstreamUrl(base, incoming, { protocol, includeHash: false });
 }
 
+/** Clone request headers and add forwarding headers (Host, X-Forwarded-*). */
 export function buildHttpForwardHeaders(
   requestHeaders: Headers,
   incomingUrl: URL,
@@ -37,6 +41,7 @@ export function buildHttpForwardHeaders(
   return headers;
 }
 
+/** Build forwarding headers for a WebSocket upgrade, stripping hop-by-hop headers. */
 export function buildWebSocketForwardHeaders(headers: Headers, environmentBase: URL): Record<string, string> {
   const forwarded: Record<string, string> = {
     host: environmentBase.host,

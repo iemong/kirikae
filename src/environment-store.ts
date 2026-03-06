@@ -2,11 +2,17 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 
+/** A persisted environment entry representing a proxy upstream target. */
 export interface EnvironmentRecord {
+  /** Unique identifier. */
   id: string;
+  /** Human-readable label. */
   label: string;
+  /** Upstream base URL (http or https). */
   url: string;
+  /** ISO-8601 creation timestamp. */
   createdAt: string;
+  /** ISO-8601 last-update timestamp. */
   updatedAt: string;
 }
 
@@ -22,8 +28,11 @@ interface LegacyPersistedData {
   activeTargetUrl: string | null;
 }
 
+/** The currently active environment selection. */
 export interface ActiveEnvironmentSelection {
+  /** Active upstream URL, or `null` if none is selected. */
   url: string | null;
+  /** ID of the selected environment record, or `null` for ad-hoc URLs. */
   environmentId: string | null;
 }
 
@@ -55,13 +64,16 @@ function normalizeEnvironmentUrl(url: string): string {
   return parsed.toString();
 }
 
+/** Manages environment records and persists them to a JSON file on disk. */
 export class EnvironmentStore {
   private data: PersistedData = createEmptyData();
   private initPromise: Promise<void> | null = null;
   private persistQueue: Promise<void> = Promise.resolve();
 
+  /** Create a store backed by the given file path. */
   constructor(private readonly filePath: string) {}
 
+  /** Initialise the store by loading persisted data from disk. */
   async init(): Promise<void> {
     if (!this.initPromise) {
       this.initPromise = this.loadFromDisk();
@@ -69,14 +81,17 @@ export class EnvironmentStore {
     return this.initPromise;
   }
 
+  /** Return a shallow copy of all registered environments. */
   getEnvironments(): EnvironmentRecord[] {
     return [...this.data.environments];
   }
 
+  /** Look up an environment by its ID. */
   getEnvironment(id: string): EnvironmentRecord | undefined {
     return this.data.environments.find((item) => item.id === id);
   }
 
+  /** Return the currently active environment selection. */
   getActiveSelection(): ActiveEnvironmentSelection {
     return {
       url: this.data.activeEnvironmentUrl,
@@ -84,6 +99,7 @@ export class EnvironmentStore {
     };
   }
 
+  /** Set the active environment by record ID. */
   async setActiveEnvironmentById(id: string): Promise<EnvironmentRecord> {
     const environment = this.getEnvironment(id);
     if (!environment) {
@@ -95,6 +111,7 @@ export class EnvironmentStore {
     return environment;
   }
 
+  /** Set the active environment by an ad-hoc URL (not tied to a record). */
   async setActiveEnvironmentUrl(url: string): Promise<void> {
     const normalized = normalizeEnvironmentUrl(url);
     this.data.activeEnvironmentId = null;
@@ -102,6 +119,7 @@ export class EnvironmentStore {
     await this.persist();
   }
 
+  /** Register a new environment and persist it. */
   async addEnvironment(input: { label: string; url: string }): Promise<EnvironmentRecord> {
     const now = new Date().toISOString();
     const normalizedUrl = normalizeEnvironmentUrl(input.url);
@@ -117,6 +135,7 @@ export class EnvironmentStore {
     return record;
   }
 
+  /** Update an existing environment's label and URL. */
   async updateEnvironment(id: string, update: { label: string; url: string }): Promise<EnvironmentRecord> {
     const environment = this.getEnvironment(id);
     if (!environment) {
@@ -133,6 +152,7 @@ export class EnvironmentStore {
     return environment;
   }
 
+  /** Delete an environment by ID. Clears active selection if it was the active one. */
   async deleteEnvironment(id: string): Promise<void> {
     const before = this.data.environments.length;
     this.data.environments = this.data.environments.filter((t) => t.id !== id);
